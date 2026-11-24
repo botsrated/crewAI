@@ -40,6 +40,7 @@ TERMS = {
             "amount": "1000",
             "asset": BASE_USDC,
             "payTo": BOTSRATED_PAY_TO,
+            "maxTimeoutSeconds": 600,
         }
     ],
 }
@@ -164,7 +165,7 @@ def test_check_no_signature_on_404_bad_terms_or_redirect(get, sign):
     assert get.call_args.kwargs["allow_redirects"] is False
     for accepts in (
         [{**TERMS["accepts"][0], "payTo": SELLER_PAY_TO}],
-        [{**TERMS["accepts"][0], "amount": "2000"}],
+        [{**TERMS["accepts"][0], "amount": "10001"}],
         [{**TERMS["accepts"][0], "amount": "500000", "payTo": SELLER_PAY_TO}, TERMS["accepts"][0]],
         [],
     ):
@@ -274,6 +275,7 @@ def test_check_rejects_permit2_extra_extensions_and_long_timeout(get, sign):
         {**ok, "accepts": [EIP3009_OPTION, {**EIP3009_OPTION, "extra": {"assetTransferMethod": "eip3009"}}]},
         {**ok, "accepts": [{**EIP3009_OPTION, "maxTimeoutSeconds": 86400}]},
         {**ok, "accepts": [{**EIP3009_OPTION, "maxTimeoutSeconds": "300"}]},
+        {**ok, "accepts": [{k: v for k, v in EIP3009_OPTION.items() if k != "maxTimeoutSeconds"}]},
         {**ok, "x402Version": 1},
     ):
         get.return_value = _quote(terms)

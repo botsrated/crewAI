@@ -1,6 +1,6 @@
 """BotsRated tools: look up an x402 seller before paying it.
 
-``BotsRatedPreflightTool`` is free. ``BotsRatedCheckTool`` costs $0.001 USDC on Base per call (the first 100 per day
+``BotsRatedPreflightTool`` is free. ``BotsRatedCheckTool`` costs $0.01 USDC on Base per call (the first 5 per day
 are free) and only runs with a budget and an x402 client supplied by the user.
 """
 
@@ -23,7 +23,7 @@ BOTSRATED_PAY_TO = "0x7F936f42F46B6c4Cbd3242cF8A1759dfe829E349"
 BASE_MAINNET = "eip155:8453"
 BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 CHECK_PRICE_ATOMIC = (
-    1000  # $0.001; the first 100 checks per client per UTC day are free
+    10000  # $0.01; the first 5 checks per client per UTC day are free
 )
 MAX_TIMEOUT_SECONDS = 600
 # EIP-3009 (transferWithAuthorization) needs only the token's EIP-712 domain name/version. Any other
@@ -144,7 +144,7 @@ class BotsRatedPreflightTool(BaseTool):
 
 
 class BotsRatedCheckTool(BaseTool):
-    """Paid ($0.001 USDC on Base, first 100 per day free) BotsRated check of one seller host, within a user-set budget.
+    """Paid ($0.01 USDC on Base, first 5 per day free) BotsRated check of one seller host, within a user-set budget.
 
     Args:
         budget_usd: Total USD this tool may spend. Required.
@@ -155,7 +155,7 @@ class BotsRatedCheckTool(BaseTool):
 
     name: str = "BotsRated Paid Check"
     description: str = (
-        "Paid: $0.001 USDC on Base (first 100 per day free), within a budget the user set. Full BotsRated facts for one x402 seller "
+        "Paid: $0.01 USDC on Base (first 5 per day free), within a budget the user set. Full BotsRated facts for one x402 seller "
         "host: probe counts, valid-402 rate, latency, price and payTo vs listing, paid test-buys with "
         "transaction links, recent receipts. Use BotsRated Preflight (free) first."
     )
@@ -217,7 +217,7 @@ class BotsRatedCheckTool(BaseTool):
             return json.dumps(
                 {
                     "error": "terms_rejected",
-                    "message": "every payment option must be exact EIP-3009 Base USDC to BotsRated at $0.001 or "
+                    "message": "every payment option must be exact EIP-3009 Base USDC to BotsRated at $0.01 or "
                     "less, with no payment extensions",
                 }
             )
@@ -357,7 +357,8 @@ def _acceptable(option: Any) -> dict[str, Any] | None:
         return None
     amount = str(option.get("amount", ""))
     extra = option.get("extra", {})
-    timeout = option.get("maxTimeoutSeconds", MAX_TIMEOUT_SECONDS)
+    # A quote with no maxTimeoutSeconds is refused; it is not read as the longest window.
+    timeout = option.get("maxTimeoutSeconds")
     if not (
         option.get("scheme") == "exact"
         and option.get("network") == BASE_MAINNET
